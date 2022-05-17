@@ -1,0 +1,105 @@
+---
+title: "FoodJustice"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    social: menu
+    source_code: embed
+    theme: paper
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(ggplot2)
+library(mgcv)
+library(shiny)
+library(flexdashboard)
+library(tidyverse)
+library(here)
+library(plotly)
+options(scipen = 99)
+
+
+```
+
+
+
+
+```{r}
+
+
+dataset  <- read_csv(here("data/chr_pressures_by_food_type.csv")) 
+```
+
+
+```{r}
+dataset <- dataset %>% 
+  select(sum_cumulative_pressure, per_low_birthweight, per_freq_mental_distress, per_freq_mental_distress, life_expectancy, region, Backyard.Pig.Meat, Cereals.and.Grains, Chickens...Pigs.Livestock.Meat, Eggs, Freshwater.Fishery, Fruits.and.Vegetables, Mariculture, Mariculture.Feed, Marine.Fishery, Milk,
+Oil.Crops.and.Seeds, Pulses.and.Beans, Rice, Ruminants.Livestock.Meat, Soy, Spices, Starches, Starches.and.Roots, Sugar, Tree.Nuts, per_rural, median_household_income, drinking_water_violation, state.x, per_black, per_am_indian_alaska_native, per_asian, per_nativeHA_other_pacific_isl, per_hispanic, per_non_hispanic_white, division, air_pollution_avg_daily_pm2.5 )
+
+
+
+dataset <- dataset %>% 
+  drop_na()
+```
+
+
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+
+
+
+
+
+
+
+#
+sliderInput('sampleSize', 'Sample Size', min=3000, max=3000,
+            value=3000, step=0, round=0)
+
+checkboxInput('jitter', 'Jitter', value = TRUE)
+checkboxInput('smooth', 'Smooth', value = FALSE)
+
+selectInput('x', 'X', names(dataset))
+selectInput('y', 'Y', names(dataset), names(dataset)[[2]])
+selectInput('color', 'Color', c('None', names(dataset)))
+
+selectInput('facet_row', 'Facet Row',
+c(None='.', names(dataset)))
+selectInput('facet_col', 'Facet Column',
+c(None='.', names(dataset)))
+```
+
+Outputs
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+# dataset <- reactive({
+#   dataset[sample(nrow(dataset), input$sampleSize),]
+# })
+
+renderPlot({
+  p <- ggplot(data = dataset, aes_string(x=input$x, y=input$y)) + geom_point()
+  
+  if (input$color != 'None')
+    p <- p + aes_string(color=input$color)
+  
+  facets <- paste(input$facet_row, '~', input$facet_col)
+  if (facets != '. ~ .')
+    p <- p + facet_grid(facets)
+  
+  if (input$jitter)
+    p <- p + geom_jitter()
+  if (input$smooth)
+    p <- p + geom_smooth()
+  
+  print(p)
+})
+```
